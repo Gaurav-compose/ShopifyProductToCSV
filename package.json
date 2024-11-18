@@ -1,0 +1,12 @@
+{
+  "dependencies": {
+    "axios": "^1.7.7",
+    "dotenv": "^16.4.5",
+    "json2csv": "^6.0.0-alpha.2",
+    "shopify-api-node": "^3.14.0",
+    "typescript": "^5.6.3"
+  },
+  "devDependencies": {
+    "@types/json2csv": "^5.0.7"
+  }
+}

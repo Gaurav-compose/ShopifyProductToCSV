@@ -13,8 +13,8 @@
     "@types/json2csv": "^5.0.7"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "get-products": "ts-node src/products/getAllProducts.ts"
+    "script1": "ts-node src/products/script1.ts",
+    "script2": "ts-node src/products/script2.ts"
   },
   "author": "",
   "license": "ISC",

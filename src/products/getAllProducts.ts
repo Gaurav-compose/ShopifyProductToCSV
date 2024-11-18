@@ -1,17 +1,9 @@
- 
- import { writeFileSync } from 'fs';
- import { parse } from 'json2csv';
- import dotenv from 'dotenv'
-import Shopify from "shopify-api-node";
- dotenv.config()
 
-
- const shopify = new Shopify({
-    shopName: process.env.SHOPIFY_STORE_NAME as string,
-    accessToken: process.env.SHOPIFY_ADMIN_ACCESS_TOKEN as string,
-    apiVersion: '2024-10',
-});
-
+import { writeFileSync } from 'fs';
+import { join } from 'path';
+import { cwd } from 'process';
+import { parse } from 'json2csv';
+import { shopify } from '../services/shopifyApi';
 
 export async function fetchAllShopifyProducts() {
   try {
@@ -20,16 +12,17 @@ export async function fetchAllShopifyProducts() {
     const limit = 250; // Shopify's API limit per request
 
     while (true) {
-        const params: any = { limit };
-        if (lastProductId) {
-            params.since_id = lastProductId; // Use since_id for pagination
-        }
+      const params: any = { limit };
+      if (lastProductId) {
+        params.since_id = lastProductId; // Use since_id for pagination
+      }
 
-        const response = await shopify.product.list(params);
-        if (response.length === 0) break;
+      const response = await shopify.product.list(params);
+      console.log("Data fetched from shopify. Products fetched: " + response.length);
+      if (response.length === 0) break;
 
-        allProducts = [...allProducts, ...response];
-        lastProductId = response[response.length - 1].id; // Set since_id for the next batch
+      allProducts = [...allProducts, ...response];
+      lastProductId = response[response.length - 1].id; // Set since_id for the next batch
     }
 
     // Map data to only include id, title, and URL
@@ -39,11 +32,13 @@ export async function fetchAllShopifyProducts() {
       url: `https://maisonsunny.com.au/products/${product.handle}`
     }));
 
+    console.log("CSV will be saved in: ", join(cwd() + '/src/public'))
+
     // Convert JSON to CSV
     const csv = parse(csvData, { fields: ["id", "title", "url"] });
-    
+
     // Save CSV to a file
-    writeFileSync('shopify_products.csv', csv);
+    writeFileSync(join(cwd() + '/src/public/shopify_products.csv'), csv);
 
     console.log('CSV file created successfully');
     return csvData;
@@ -53,8 +48,4 @@ export async function fetchAllShopifyProducts() {
   }
 }
 
-
-fetchAllShopifyProducts()
-
-  
-  
+fetchAllShopifyProducts();

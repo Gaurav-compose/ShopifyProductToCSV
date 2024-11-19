@@ -1,7 +1,7 @@
 import Shopify from "shopify-api-node";
 import dotenv from 'dotenv';
 
-dotenv.config()
+dotenv.config();
 
 export const shopify = new Shopify({
     shopName: process.env.SHOPIFY_STORE_NAME as string,

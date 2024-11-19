@@ -16,7 +16,7 @@ async function readCSV(filePath: string): Promise<{ id: string; url: string }[]>
 }
 
 // Post URL to API and return response
-async function postUrlToEndpoint(url: string) {
+async function generateDescription(url: string) {
   try {
     const { data } = await axios.post('https://raqx7z2owrogcpjfryd7hr5yhu0adjem.lambda-url.ap-southeast-2.on.aws/', { url });
     return data;
@@ -33,7 +33,7 @@ async function processInBatches(data: { id: string; url: string }[]) {
     ; i += 1) {
     const batch = data.slice(i, i + 1);
     for (const { id, url } of batch) {
-      const response = await postUrlToEndpoint(url);
+      const response = await generateDescription(url);
       responses.push({ id, response });
     }
     console.log(`Processed batch ${Math.floor(i / 10) + 1}`);

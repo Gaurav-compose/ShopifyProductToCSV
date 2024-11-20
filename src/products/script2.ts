@@ -56,19 +56,19 @@ async function generateDescription(url: string, id: string) {
 }
 
 // Process URLs in batches of 10 and save responses
-async function processInBatches(data: { id: string; url: string }[]): Promise<any[]> {
+async function processInBatches(data: { id: string; url: string }[]): Promise<any> {
   try {
     const responses: any[] = [];
     const promiseArr1: any[] = [];
     const promiseArr2: any[] = [];
-    const brokenUrls: string[] = [];
+    const brokenUrls: any[] = [];
     const urls: { url: string; id: string }[] = [];
     data.forEach((item: { url: string; id: string }) => promiseArr1.push(scrapUrl(item.url, item.id)));
 
     const responseArr1 = await Promise.all(promiseArr1);
     responseArr1.forEach((res: any) => {
       if (res.brokenUrl && res.brokenUrl.length) {
-        brokenUrls.push(res.brokenUrl);
+        brokenUrls.push({ url: res.brokenUrl });
       } else {
         urls.push({ url: res.url, id: res.id });
       }
@@ -88,7 +88,7 @@ async function processInBatches(data: { id: string; url: string }[]): Promise<an
         specifications: res.data.specifications
       });
     });
-    return responses;
+    return { responses, brokenUrls };
   } catch (error: any) {
     console.log("====err", error.message);
     return [];
@@ -101,15 +101,17 @@ async function main() {
     console.time("mainFunction runtime");
     const filePath = join('src/public', 'shopify_products.csv');
     const outputPath = join(cwd(), 'src/public/updated_shopify_products.csv');
+    const brokenUrlOutputPath = join(cwd(), 'src/public/broken_urls.csv');
 
     // Read and prepare the data
     let data = await readCSV(filePath);
 
     //TODO: comment previous line if want to run for whole products urls
-    data = data.slice(0, 10); // Adjust range as needed
+    data = data.slice(0, 20); // Adjust range as needed
 
     const batches: any[] = [];
     const allResponses: any[] = [];
+    const allBrokenUrls: any[] = [];
 
     // Split data into batches of 10
     for (let i = 0; i < data.length; i += 10) {
@@ -118,23 +120,31 @@ async function main() {
 
     // Process each batch
     for (let urlList of batches) {
-      const responses: any[] = await processInBatches(urlList);
+      const { responses, brokenUrls }: any = await processInBatches(urlList);
 
-      console.log('Batch responses length: === ', responses.length);
+      console.log('Batch responses length: === ', responses.length, brokenUrls.length);
       allResponses.push(...responses);
-
+      allBrokenUrls.push(...brokenUrls);
       // Optional: Add a delay between batches
       await new Promise((resolve) => setTimeout(resolve, 5000));
       console.log('5 seconds wait over');
     }
     console.log('All responses length: === ', allResponses.length);
+    console.log('All brokenUrls length: === ', allBrokenUrls.length);
+
     // Convert all collected responses to CSV
-    const csv = parse(allResponses, {
+    const csv1 = parse(allResponses, {
       fields: ["id", "meta_title", "url", "meta_description", "product_description", "key_features", "specifications"],
     });
 
+    // Convert all broken urls to csv
+    const csv2 = parse(allBrokenUrls, {
+      fields: ["url"],
+    });
+
     // Write the CSV file with all responses
-    writeFileSync(outputPath, csv);
+    writeFileSync(outputPath, csv1);
+    writeFileSync(brokenUrlOutputPath, csv2);
     console.log('All responses saved to updated_shopify_products.csv');
     console.timeEnd("mainFunction runtime");
   } catch (error) {

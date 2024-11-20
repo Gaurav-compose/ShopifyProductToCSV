@@ -1,4 +1,4 @@
-import { appendFileSync, createReadStream, existsSync, writeFileSync } from 'fs';
+import { createReadStream, writeFileSync } from 'fs';
 import { join } from 'path';
 import { cwd } from 'process';
 import { parse } from 'json2csv';
@@ -67,7 +67,7 @@ async function processInBatches(data: { id: string; url: string }[]): Promise<an
 
     const responseArr1 = await Promise.all(promiseArr1);
     responseArr1.forEach((res: any) => {
-      if (res.brokenUrl && res.brokenUrl.length) {
+      if (res.brokenUrl?.length) {
         brokenUrls.push({ url: res.brokenUrl });
       } else {
         urls.push({ url: res.url, id: res.id });

@@ -1,4 +1,4 @@
-import { createReadStream, writeFileSync } from 'fs';
+import { appendFileSync, createReadStream, existsSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { cwd } from 'process';
 import { parse } from 'json2csv';
@@ -97,33 +97,42 @@ async function processInBatches(data: { id: string; url: string }[]): Promise<an
 async function main() {
   try {
     const filePath = join('src/public', 'shopify_products.csv');
+    const outputPath = join(cwd(), 'src/public/updated_shopify_products.csv');
+
+    // Read and prepare the data
     let data = await readCSV(filePath);
-    data = data.slice(0, 21);
-    const newArr: any = [];
-    for (let i = 0; i < data.length; i = i + 10) {
-      newArr.push(data.slice(i, i + 10));
+    data = data.slice(0, 21); // Adjust range as needed
+    const batches: any[] = [];
+    const allResponses: any[] = [];
+
+    // Split data into batches of 10
+    for (let i = 0; i < data.length; i += 10) {
+      batches.push(data.slice(i, i + 10));
     }
 
-    for (let urlList of newArr) {
+    // Process each batch
+    for (let urlList of batches) {
       const responses: any[] = await processInBatches(urlList);
 
-      console.log('All responses length: === ', responses.length);
-      // Convert JSON to CSV
-      const csv = parse(responses, {
-        fields: ["id", "title", "url", "meta_description", "product_description", "keyFeatures", "specifications"]
-      });
+      console.log('Batch responses length: === ', responses.length);
+      allResponses.push(...responses);
 
-      // Save CSV to a file
-      writeFileSync(join(cwd() + '/src/public/updated_shopify_products.csv'), csv);
-      console.log('Responses saved to updated_shopify_products.csv');
-      await new Promise((resolve) => {
-        setTimeout(() => resolve(true), 5000);
-      })
+      // Optional: Add a delay between batches
+      await new Promise((resolve) => setTimeout(resolve, 5000));
       console.log('5 seconds wait over');
     }
+
+    // Convert all collected responses to CSV
+    const csv = parse(allResponses, {
+      fields: ["id", "meta_title", "url", "meta_description", "product_description", "key_features", "specifications"],
+    });
+
+    // Write the CSV file with all responses
+    writeFileSync(outputPath, csv);
+    console.log('All responses saved to updated_shopify_products.csv');
   } catch (error) {
     console.error('Error in processing:', error);
   }
 }
 
-main();
+main()

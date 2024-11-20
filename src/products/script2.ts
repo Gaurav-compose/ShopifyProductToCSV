@@ -19,19 +19,7 @@ async function readCSV(filePath: string): Promise<{ id: string; url: string }[]>
       .on('error', reject);
   });
 }
-
-// Post URL to API and return response
-async function generateDescription(url: string, id: string) {
-  try {
-    console.log("Generate description calleld for ", url);
-    const { data } = (await axios.post(process.env.FETCH_DETAILS_URL as string, { url })).data;
-    return { url, data, id };
-  } catch (error) {
-    console.error(`Error posting URL: ${url}`, error);
-    return null;
-  }
-}
-
+// scrap url and save in db
 async function scrapUrl(url: string, id: string) {
   let brokenUrl: string = '';
   try {
@@ -53,6 +41,20 @@ async function scrapUrl(url: string, id: string) {
   }
 }
 
+// Post URL to API and return response
+async function generateDescription(url: string, id: string) {
+  try {
+    console.time(`responseTime ${id}`);
+    console.log("Generate description called for ", url);
+    const { data } = (await axios.post(process.env.FETCH_DETAILS_URL as string, { url })).data;
+    console.timeEnd(`responseTime ${id}`);
+    return { url, data, id };
+  } catch (error) {
+    console.error(`Error posting URL: ${url}`, error);
+    return { url, data: null, id };
+  }
+}
+
 // Process URLs in batches of 10 and save responses
 async function processInBatches(data: { id: string; url: string }[]): Promise<any[]> {
   try {
@@ -71,12 +73,12 @@ async function processInBatches(data: { id: string; url: string }[]): Promise<an
         urls.push({ url: res.url, id: res.id });
       }
     });
-
+    console.log({ brokenUrls: brokenUrls.length, urls: urls.length });
     urls.forEach(({ url, id }: { url: string; id: string }) => promiseArr2.push(generateDescription(url, id)));
 
     const responseArr2 = await Promise.all(promiseArr2);
     responseArr2.forEach((res: any) => {
-      responses.push({
+      if (res.data) responses.push({
         id: res.id,
         meta_title: res.data.meta_title,
         url: res.url,
@@ -87,8 +89,8 @@ async function processInBatches(data: { id: string; url: string }[]): Promise<an
       });
     });
     return responses;
-  } catch (error) {
-    console.log("====err", { error });
+  } catch (error: any) {
+    console.log("====err", error.message);
     return [];
   }
 }
@@ -96,12 +98,16 @@ async function processInBatches(data: { id: string; url: string }[]): Promise<an
 // Main execution
 async function main() {
   try {
+    console.time("mainFunction runtime");
     const filePath = join('src/public', 'shopify_products.csv');
     const outputPath = join(cwd(), 'src/public/updated_shopify_products.csv');
 
     // Read and prepare the data
     let data = await readCSV(filePath);
-    data = data.slice(0, 21); // Adjust range as needed
+
+    //TODO: comment previous line if want to run for whole products urls
+    data = data.slice(0, 10); // Adjust range as needed
+
     const batches: any[] = [];
     const allResponses: any[] = [];
 
@@ -121,7 +127,7 @@ async function main() {
       await new Promise((resolve) => setTimeout(resolve, 5000));
       console.log('5 seconds wait over');
     }
-
+    console.log('All responses length: === ', allResponses.length);
     // Convert all collected responses to CSV
     const csv = parse(allResponses, {
       fields: ["id", "meta_title", "url", "meta_description", "product_description", "key_features", "specifications"],
@@ -130,6 +136,7 @@ async function main() {
     // Write the CSV file with all responses
     writeFileSync(outputPath, csv);
     console.log('All responses saved to updated_shopify_products.csv');
+    console.timeEnd("mainFunction runtime");
   } catch (error) {
     console.error('Error in processing:', error);
   }

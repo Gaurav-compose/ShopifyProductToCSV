@@ -106,7 +106,7 @@ async function main() {
     // Read and prepare the data
     let data = await readCSV(filePath);
 
-    //TODO: comment previous line if want to run for whole products urls
+    // TODO: comment below line if want to run for whole products urls
     data = data.slice(0, 20); // Adjust range as needed
 
     const batches: any[] = [];

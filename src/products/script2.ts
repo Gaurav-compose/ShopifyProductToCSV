@@ -46,7 +46,7 @@ async function generateDescription(url: string, id: string) {
   try {
     console.time(`responseTime ${id}`);
     console.log("Generate description called for ", url);
-    const { data } = (await axios.post(process.env.FETCH_DETAILS_URL as string, { url })).data;
+    const { data } = (await axios.post(process.env.FETCH_DETAILS_URL as string, { url }, { timeout: 50000 })).data;
     console.timeEnd(`responseTime ${id}`);
     return { url, data, id };
   } catch (error) {

@@ -3,18 +3,6 @@ import fs, { createReadStream } from 'fs';
 import csvParser from 'csv-parser';
 
 
-// async function updateProductData(){
-//     //read the csv data and format it properly and save it to an array
-
-
-//     //use the above csv and map it and get all products from shopify 
-//     //match the id from csv and shopify and update the product data
-//     //create batches for products to update so it dont hit shopify limit
-
-// }
-
-
-
 // Function to read CSV file
 function readCSV(filePath: string): Promise<any[]> {
   return new Promise((resolve, reject) => {
@@ -36,8 +24,6 @@ function readCSV(filePath: string): Promise<any[]> {
       });
   });
 }
-
-
 
 
 async function fetchAllProducts() {
@@ -97,7 +83,7 @@ async function updateProductData() {
       if (shopifyProduct) {
         // Prepare update data
         const updateData = {
-          title:row.meta.title,
+          title: row.meta.title,
           body_html: row.product_description
         };
 

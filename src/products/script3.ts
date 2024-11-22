@@ -53,7 +53,9 @@ async function updateProduct(productId: number, updateData: { body_html: any; },
         namespace: 'custom',
         owner_resource: 'product',
         owner_id: productId,
-        ...metafield
+        key: metafield.key,
+        value: metafield.value,
+        type: metafield.type,
       });
     }
     console.log(`Product ${productId} updated successfully!`);
@@ -80,18 +82,35 @@ async function updateProductData() {
     for (const row of uniqueData) {
       const shopifyProduct = shopifyProducts.find((p) => p.id.toString() === row.id);
 
+
       if (shopifyProduct) {
+
+
+
         // Prepare update data
         const updateData = {
-          title: row.meta.title,
+
           body_html: row.product_description
         };
 
         const metafields = [
           {
-            key: 'productDescription',
-            value: row.meta_description,
-            type: 'single_line_text_field',
+            key: 'productDescriptions',
+            value: JSON.stringify({
+              type: "root",
+              children: [
+                {
+                  type: 'paragraph',
+                  children: [
+                    {
+                      type: 'text',
+                      value: row.product_description
+                    },
+                  ],
+                },
+              ]
+            }),
+            type: 'rich_text_field',
           },
           {
             key: 'productKeyfeatures',
@@ -111,25 +130,27 @@ async function updateProductData() {
       }
     }
 
-    if (updates.length > 0) {
-      const { productId, updateData, metafields } = updates[0];
-      const updatedProduct = await updateProduct(productId, updateData, metafields);
-      console.log('Updated product:', updatedProduct);
-    } else {
-      console.log('No updates to process.');
-    }
-    // // Step 4: Process updates in batches
-    // const batchSize = 50; // Adjust as needed to avoid hitting rate limits
-    // for (let i = 0; i < updates.length; i += batchSize) {
-    //   const batch = updates.slice(i, i + batchSize);
-    //   await Promise.all(
-    //     batch.map(({ productId, updateData, metafields }) =>
-    //       updateProduct(productId, updateData, metafields)
-    //     )
-    //   );
+    // if (updates.length > 0) {
+    //   const { productId, updateData, metafields } = updates[0];
+    //   const updatedProduct = await updateProduct(productId, updateData, metafields);
+
+    // } else {
+    //   console.log('No updates to process.');
     // }
 
-    // console.log('All products updated successfully!');
+
+    // // Step 4: Process updates in batches
+    const batchSize = 50;
+    for (let i = 0; i < updates.length; i += batchSize) {
+      const batch = updates.slice(i, i + batchSize);
+      await Promise.all(
+        batch.map(({ productId, updateData, metafields }) =>
+          updateProduct(productId, updateData, metafields)
+        )
+      );
+    }
+
+    console.log('All products updated successfully!');
   } catch (error: any) {
     console.error('Error updating product data:', error.message);
   }
